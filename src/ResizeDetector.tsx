@@ -64,6 +64,16 @@ export interface Props {
    * Default: undefined
    */
   observerOptions?: ResizeObserverOptions;
+  /**
+   * Callback to skip updating
+   * 
+   * Example usage: if react-resize-detector is used for overflowing elements and
+   * update should just happen, when specific condition applies
+   * (amount of elements fitting in the targetRef changed e.g.)
+   * 
+   * Default: undefined
+   */
+   skipResize?: (width?: number, height?: number) => boolean
 }
 
 export interface ComponentsProps extends Props {
@@ -222,7 +232,7 @@ class ResizeDetector extends PureComponent<ComponentsProps, ReactResizeDetectorD
   };
 
   createResizeHandler: ResizeObserverCallback = (entries): void => {
-    const { handleWidth = true, handleHeight = true, onResize } = this.props;
+    const { handleWidth = true, handleHeight = true, onResize, skipResize } = this.props;
 
     if (!handleWidth && !handleHeight) return;
 
@@ -231,7 +241,8 @@ class ResizeDetector extends PureComponent<ComponentsProps, ReactResizeDetectorD
     entries.forEach(entry => {
       const { width, height } = (entry && entry.contentRect) || {};
 
-      const shouldSetSize = !this.skipOnMount && !isSSR();
+      const skipSetSize = skipResize && skipResize(width, height);
+      const shouldSetSize = !this.skipOnMount && !isSSR() && !skipSetSize;
       if (shouldSetSize) {
         notifyResize({ width, height });
       }

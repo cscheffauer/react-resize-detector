@@ -20,10 +20,12 @@ function useResizeDetector<T = any>(props: FunctionProps = {}) {
     handleHeight = true,
     targetRef,
     observerOptions,
-    onResize
+    onResize,
+    skipResize
   } = props;
 
-  const skipResize: MutableRefObject<null | boolean> = useRef(skipOnMount);
+  const skipResizeOnMount: MutableRefObject<null | boolean> = useRef(skipOnMount);
+  
   const localRef = useRef(null);
   const ref = (targetRef ?? localRef) as MutableRefObject<T>;
   const resizeHandler = useRef<ResizeObserverCallback>();
@@ -46,12 +48,13 @@ function useResizeDetector<T = any>(props: FunctionProps = {}) {
       entries.forEach(entry => {
         const { width, height } = (entry && entry.contentRect) || {};
 
-        const shouldSetSize = !skipResize.current && !isSSR();
+        const skipSetSize = skipResize && skipResize(width, height);
+        const shouldSetSize = !skipResizeOnMount.current && !isSSR() && !skipSetSize;
         if (shouldSetSize) {
           notifyResize({ width, height });
         }
 
-        skipResize.current = false;
+        skipResizeOnMount.current = false;
       });
     };
 
